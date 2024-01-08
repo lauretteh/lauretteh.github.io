@@ -20,7 +20,8 @@
                                                 <br>
 					<header class="major special"><h3>Academic Portfolio</h3>
                                                 <p>of</p>
-						<h4>Computing</h4>
+						<h3>Computing</h3>
+                                                <h5> Please consider these are intended to be small samples of my style, training, and work.  In most cases, full solutions are intentionally left out to retain the integrity of the courses. </h5>
                                                 <br>
                                         </header><!-- Text -->
                                        <!-- <a href="#" class="image fit"><img src="images/pic01.jpg" alt="" width="788" height="281"></a> --!>
@@ -29,83 +30,313 @@
 <div class="table-wrapper">
                                                                 <table><thead><tr><th>Area</th>
                                                                                         <th>Description</th>
-                                                                                </tr></thead><tbody><tr><td><a href="#ODE">Ordinary Differential Equations</a></td>
-                                                                                        <td>Ante turpis integer aliquet porttitor.</td>
-                                                                                </tr><tr><td><a href="#PDE">Partial Differential Equations</a></td>
-                                                                                        <td>Vis ac commodo adipiscing arcu aliquet.</td>
-                                                                                </tr><tr><td><a href="#RA">Regression Analysis</a></td>
-                                                                                        <td> Morbi faucibus arcu accumsan lorem.</td>
-                                                                                </tr><tr><td><a href="#ASA">Advanced Statistical Analysis</a></td>
-                                                                                        <td>Vitae integer tempus condimentum.</td>
-                                                                                </tr><tr><td><a href="#SS">Spatial Statistics</a></td>
-                                                                                        <td>Culminating Experience</td>
+                                                                                </tr></thead><tbody><tr><td><a href="#CUDA">Parallel Computing</a></td>
+                                                                                        <td>Undergrad level matrix multiply in CUDA.</td>
+                                                                                </tr><tr><td><a href="#OMP">Parallel Computing</a></td>
+                                                                                        <td>Merge Sort optimized for large tasks on OMP.</td>
+                                                                                </tr><tr><td><a href="HPC_2016.pdf">High Performance Computing</a></td>
+                                                                                        <td>2016 paper review of Atmospheric Science-based PDE/HPC implementation which I really enjoyed.</td>
+                                                                                </tr><tr><td><a href="#BST">Algorithms/Data Structures.</a></td>
+                                                                                        <td>Binary Search Tree in Java.</td>
+                                                                                </tr><tr><td><a href="#ASM">Assembler</a></td>
+                                                                                        <td>Undergrad homework: Assembler Parsing</td>
                                                                                 </tr></tfoot></table></div>
 
 
 
-                                                        <h4 id="ODE">Ordinary Differential Equations</h4>
-                                                        <pre><code>i = 0;
+                                                        <h4 id="CUDA">Matrix Multiply in C++/CUDA</h4>
+<p>This assignment explored improving performance of vector addition and matrix multiplication by coalescing memory access and optimizing parallelization.
+                                                        <pre><code>
+  // Loop over all sub matrices in block_row of A and block_col of B
+  // required to compute Csub. Block multiply each pair of sub matrices
+  // and accumulate results
+  for (int m = 0;  m < (A.width / FOOTPRINT_SIZE); ++m){
+    // Get Asub and Bsub descriptors
+    Asub = &A.elements[A.stride * FOOTPRINT_SIZE * block_row + FOOTPRINT_SIZE * m];
+    Bsub = &B.elements[B.stride * FOOTPRINT_SIZE * m + FOOTPRINT_SIZE * block_col];
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
+    // Copy ELEMENTS OF  ASub and Bsub into shared memory
+    // EACH THREAD loads ONE ELEMENT of ASub and ONE of Bsub
+    // Notice: it does not need to be the element it requires to
+    //         compute its Cvalue, as long as all elements are
+    //         collaboratively read.
 
-print 'It took ' + i + ' iterations to sort the deck.';
+    // Notice: every thread declares shared_A and shared_B in shared memory
+    //         even though a thread block has only one shared_A and one shared_B
+    __shared__ float shared_A[FOOTPRINT_SIZE][FOOTPRINT_SIZE];
+    __shared__ float shared_B[FOOTPRINT_SIZE][FOOTPRINT_SIZE];
+
+    // Each thread copies a column of 4 elements from shared_A and the same from shared_B
+    for (
+    shared_A[thread_row*2][thread_col*2] = Asub[2*thread_row * A.stride + 2*thread_col];
+    shared_B[thread_row*2][thread_col*2] = Bsub[2*thread_row * B.stride + 2*thread_col];
+
+    shared_A[thread_row*2+1][thread_col*2] = Asub[(2*thread_row+1) * A.stride + 2*thread_col];
+    shared_B[thread_row*2+1][thread_col*2] = Bsub[(2*thread_row+1) * B.stride + 2*thread_col];
+
+    shared_A[thread_row*2][thread_col*2+1] = Asub[2*thread_row * A.stride + 2*thread_col+1];
+    shared_B[thread_row*2][thread_col*2+1] = Bsub[2*thread_row * B.stride + 2*thread_col+1];
+
+    shared_A[thread_row*2+1][thread_col*2+1] = Asub[(2*thread_row+1) * A.stride + 2*thread_col+1];
+    shared_B[thread_row*2+1][thread_col*2+1] = Bsub[(2*thread_row+1) * B.stride + 2*thread_col+1];
+
+    // Synchronize to ensure all elements are read
+    __syncthreads();
+
+    // Do an inproduct of one row of shared_A and one col of shared_B
+    // computing one Cvalue by accumulation
+#pragma unroll
+    for(int e=0; e<FOOTPRINT_SIZE; ++e)
+    {
+       Cvalue1 += shared_A[thread_row*2][e] * shared_B[e][thread_col*2];
+       Cvalue2 += shared_A[thread_row*2+1][e] * shared_B[e][thread_col*2];
+       Cvalue3 += shared_A[thread_row*2][e] * shared_B[e][thread_col*2+1];
+       Cvalue4 += shared_A[thread_row*2+1][e] * shared_B[e][thread_col*2+1];
+    }
+    // Synchronize to ensure all Cvalues have been incremented
+    // before reading in the next shared_A AND shared_B BLOCKS
+    __syncthreads();
+  }
                                                        </code></pre>
 
+<p><a href="#top">Top</a>
 
-                                                        <h4 id="PDE">Partial Differential Equations</h4>
-                                                        <pre><code>i = 0;
+                                                        <h4 id="OMP">Merge Sort in C/OMP</h4>
+                                                        <pre><code>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "timer.h"
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
+mergesort(int a[],int temp[], int low, int high) {
+ int mid;
+ if(low<high) {
+  mid=(low+high)/2;             //find the midpoint
+  #pragma omp task if (high-low>1000000)
+  mergesort(a,temp,low,mid);   //sort the first half
+  #pragma omp task if (high-low>1000000)
+  mergesort(a,temp,mid+1,high); //sort the second half
+  #pragma omp taskwait
+  merge(a,temp,low,high,mid);  //merge them togeather into one sorted list
+
+ }
 }
 
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
-
-
-                                                        <h4 id="RA">Regression Analysis</h4>
-                                                        <pre><code>i = 0;
-
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
+merge(int a[],int temp[], int low, int high, int mid){
+ int i, j, k;
+ i=low; j=mid+1; k=low;
+ while((i<=mid)&&(j<=high)){
+   if(a[i]<a[j]){
+    temp[k]=a[i]; k++; i++;
+   } else {
+    temp[k]=a[j]; k++; j++;
+   }
+ }
+ while(i<=mid){
+   temp[k]=a[i]; k++; i++;
+ }
+ while(j<=high){
+   temp[k]=a[j]; k++; j++;
+ }
+ for(i=low;i<k;i++) {
+  a[i]=temp[i];
+ }
 }
 
-print 'It took ' + i + ' iterations to sort the deck.';
+int main(int argc, char **argv) {
+ int LEN;
+ double time;
+
+ LEN=100000000;
+ // Command line argument: array length
+ if ( argc > 1 ) LEN  = atoi(argv[1]);
+  int i, *x,*temp;
+  x=(int *)malloc(sizeof(int)*LEN);
+  temp=(int *)malloc(sizeof(int)*LEN);
+  if(x==NULL || temp == NULL){
+  printf("Out of memory"); exit(0);
+  }
+
+  //Fill the array to be sorted with random numbers
+  for (i = 0; i < LEN; i++)
+    x[i] = rand() % LEN;
+
+#ifdef DEBUG
+  printf("before sort:\n");
+  for (i = 0; i < LEN; i++) printf("%d ", x[i]);
+  printf("\n");
+#endif
+
+  initialize_timer ();  //We are just timing the sort
+  start_timer();
+  #pragma omp parallel
+  {
+    #pragma omp single
+    mergesort(x,temp,0, (LEN-1));
+  }
+  stop_timer();
+  time=elapsed_time();
+
+#ifdef DEBUG
+  printf("after sort:\n");
+  for (i = 0; i < LEN; i++) printf("%d ", x[i]);
+  printf("\n");
+#endif
+
+  printf("elapsed time = %lf (sec)\n", time);
+  return 0;
+
                                                        </code></pre>
 
+<p><a href="#top">Top</a>
 
-                                                        <h4 id="ASA">Advanced Statistical Analysis</h4>
-                                                        <pre><code>i = 0;
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
+                                                        <h4 id="BST">Binary Search Tree in Java</h4>
+                                                        <pre><code>
+        public Boolean postorderEval(TreeNode node, BST symTable) throws BSTException{
+        // evaluate left tree
+        // evaluate right tree (if not null)
+        // evaluate operator in node and return Boolean result
+                Boolean leftResult = null;
+                Boolean rightResult = null;
+                Boolean nodeResult = null;
 
-print 'It took ' + i + ' iterations to sort the deck.';
+                if (node.getLeft() != null)
+                        leftResult = postorderEval(node.getLeft(), symTable);
+                if (node.getRight() != null)
+                        rightResult = postorderEval(node.getRight(), symTable);
+
+                switch (node.getItem()) {
+                        case "true":    nodeResult = true;
+                                        break;
+                        case "false":   nodeResult = false;
+                                        break;
+                        case "not":     nodeResult = !leftResult;
+                                                        break;
+                        case "and":     nodeResult = (leftResult && rightResult);
+                                                        break;
+                        case "or":              nodeResult = (leftResult || rightResult);
+                                                        break;
+                        default:                String key = node.getItem();
+                                                        nodeResult = symTable.retrieveItem(key).value();
+                                                        break;
+                }
+                return nodeResult;
+        }
+
+
+        public static void main(String[] args){
+                System.out.println("Stepwise build infix expression: not not (true or false) and true");
+
+                Tree t = new Tree();
+                //BST symTab = new BST();
+                System.out.println("tree: "); t.preorderTraverse();
+                //System.out.println("result:\n" + t.postorderEval(symTab)+"\n");
+
+                TreeNode a = new TreeNode("true");
+                t = new Tree(a);
+                System.out.println("tree: "); t.preorderTraverse();
+                //System.out.println("result:\n" + t.postorderEval(symTab)+"\n");
+
+                TreeNode b = new TreeNode("false");
+                TreeNode or = new TreeNode("or", a, b);
+                t = new Tree(or);
+                System.out.println("tree: "); t.preorderTraverse();
+                //System.out.println("result:\n" + t.postorderEval(symTab)+"\n");
+
+                TreeNode not2 = new TreeNode("not", or);
+                t = new Tree(not2);
+                System.out.println("tree: "); t.preorderTraverse();
+                //System.out.println("result:\n" + t.postorderEval(symTab)+"\n");
+
+                TreeNode not = new TreeNode("not", not2);
+                TreeNode and = new TreeNode("and", not, new TreeNode("true"));
+                t = new Tree(and);
+                System.out.println("tree: "); t.preorderTraverse();
+                //System.out.println("result:\n" + t.postorderEval(symTab)+"\n");
+        }
                                                        </code></pre>
 
+<p><a href="#top">Top</a>
 
-                                                        <h4 id="SS">Spatial Statistics</h4>
-                                                        <pre><code>i = 0;
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
+                                                        <h4 id="ASM">Parsing in Assembler</h4>
+                                                        <pre><code>
+line_info_t* asm_pass_one (const char* asm_file_name,
+                           const char* sym_file_name) {
 
-print 'It took ' + i + ' iterations to sort the deck.';
+  int line_no = 0;
+  char line[MAX_LINE_LENGTH];
+  const char* tok;
+  line_info_t* headInfo = NULL;
+  line_info_t* curInfo = NULL;
+  line_info_t* newInfo = NULL;
+  FILE* psym = NULL;
+  bool orig_found = false; // flag for .ORIG
+  bool end_found = false;  // flag for .END
+
+
+  // open the source file and report any error
+  FILE *pasm = fopen(asm_file_name,"r");
+  if (pasm == NULL)
+  { asm_error(ERR_OPEN_READ, asm_file_name);
+    exit(EXIT_FAILURE);
+  }
+ 
+  // read the lines one at a time using fgets()
+  while (fgets(line,sizeof(line),pasm) != NULL)
+  { //printf("line is: %s",line);
+    line_no++;
+    if (sizeof(line) > MAX_LINE_LENGTH)
+    { asm_error(ERR_LINE_TOO_LONG);
+      exit(EXIT_FAILURE);
+    }
+    // convert the line to a list of tokens
+    tok = tokenize_lc3_line(line);
+    //printf("  First token is: %s\n",tok);
+   
+    // Skip comment-only lines, blank lines
+    if (tok)
+    { // Some initial error checking for .ORIG and .END
+      if ((orig_found) && (util_get_opcode(tok) == OP_ORIG))
+         asm_error(ERR_MULTIPLE_ORIG);
+
+      if (!(orig_found))
+      { if (util_get_opcode(tok) == OP_ORIG)
+          orig_found = true;
+        else
+          asm_error(ERR_ORIG_NOT_1ST);
+      }
+
+      if ((end_found) && (tok))
+        asm_error(ERR_END_NOT_LAST);
+
+      if ((!(end_found)) && (util_get_opcode(tok) == OP_END))
+        end_found = true;
+
+      // if there is an opcode (e.g. ADD) on the line, then
+      opcode_t opcode = util_get_opcode(tok);
+      if (opcode == OP_INVALID)
+      { // check to see if it is a label
+        if (process_label(tok))
+        { tok = next_token();
+          if (tok)
+             opcode = util_get_opcode(tok);
+            opcode = util_get_opcode(tok);
+        }
+      }
+      if (tok && opcode == OP_INVALID) // don't make this an else
+         asm_error(ERR_MISSING_OP,tok);
+      else if (tok)  //found a valid operation, either as the first tok or after a label
+      { //printf("  ...and it is a a valid opcode.\n");
+        // allocate/initialize a new line_info_t structure
+        newInfo = asm_init_line_info(NULL);
+        newInfo->opcode = opcode;
+        newInfo->lineNum = line_no;
+
                                                        </code></pre>
+
+<p><a href="#top">Top</a>
 
 
 				</div>

@@ -20,7 +20,8 @@
                                                 <br>
 					<header class="major special"><h3>Academic Portfolio</h3>
                                                 <p>of</p>
-						<h4>Data Systems</h4>
+						<h3 id="#top">Data Systems</h3>
+                                                <h5> Please consider these are intended to be small samples of my style, training, and work.  In most cases, full solutions are intentionally left out to retain the integrity of the courses. </h5>
                                                 <br>
                                         </header><!-- Text -->
                                        <!-- <a href="#" class="image fit"><img src="images/pic01.jpg" alt="" width="788" height="281"></a> --!>
@@ -29,83 +30,340 @@
 <div class="table-wrapper">
                                                                 <table><thead><tr><th>Area</th>
                                                                                         <th>Description</th>
-                                                                                </tr></thead><tbody><tr><td><a href="#ODE">Ordinary Differential Equations</a></td>
-                                                                                        <td>Ante turpis integer aliquet porttitor.</td>
-                                                                                </tr><tr><td><a href="#PDE">Partial Differential Equations</a></td>
-                                                                                        <td>Vis ac commodo adipiscing arcu aliquet.</td>
-                                                                                </tr><tr><td><a href="#RA">Regression Analysis</a></td>
-                                                                                        <td> Morbi faucibus arcu accumsan lorem.</td>
-                                                                                </tr><tr><td><a href="#ASA">Advanced Statistical Analysis</a></td>
-                                                                                        <td>Vitae integer tempus condimentum.</td>
-                                                                                </tr><tr><td><a href="#SS">Spatial Statistics</a></td>
-                                                                                        <td>Culminating Experience</td>
+                                                                                </tr></thead><tbody><tr><td><a href="#BTREE">Structured Database Design</a></td>
+                                                                                        <td>Illustration of a B+ tree insertion changing the number of levels.</td>
+                                                                                </tr><tr><td><a href="#LIB">Structured Database Design</a></td>
+                                                                                        <td>Example of a book title search on a library database in SQL/Java.</td>
+                                                                                </tr><tr><td><a href="#BD">Big Data</a></td>
+                                                                                        <td>Undergrad term project using Hadoop/Java to transform and summarize NoSQL data.</td>
+                                                                                </tr><tr><td><a href="state_flow.pdf">Data Flow</a></td>
+                                                                                        <td>Example of Data State Flow Design.</td>
                                                                                 </tr></tfoot></table></div>
 
 
 
-                                                        <h4 id="ODE">Ordinary Differential Equations</h4>
-                                                        <pre><code>i = 0;
+                                                        <h4 id="BTREE">B+ Tree Insertion Concept</h4>
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
+<p><span class="image"><img src="images/portfolio_b_PLUS_tree.png" alt=""></span>
+
+<p><a href="#top">Top</a>
+
+
+                                                        <h4 id="LIB">Book Title SQL Search</h4>
+                                                        <pre><code>
+        private void bookSearchTitle(Lab5 a) {
+                String Title, sqlstr, liststr, selected;
+                ResultSet rs;
+                int numOwned = 0;
+                int numAvail = 0;
+                System.out.println("Searching for book by Title");
+                Title = JOptionPane.showInputDialog ("Please enter the Title:");
+                System.out.println("Searching for Title:  " + Title);
+
+                sqlstr = "select count(Title) from Book where Title like \"%" + Title + "%\";";
+
+                try{
+                        rs = stmt.executeQuery(sqlstr);
+                        if (rs.next()) {
+                                System.out.println("  query: " + sqlstr);
+                                numOwned = rs.getInt(1);
+                                System.out.println("  answer: " + numOwned);
+                        }
+                        //rs.close();
+                        if (numOwned == 0) { // no records exist;
+                                System.out.println("AAA");
+                                JOptionPane.showMessageDialog (null,
+                                                "The library does not currently have any books with that title in stock.");
+                        }
+
+                        else { //at least one book exists, let the user pick from the available titles
+                                System.out.println("BBB");
+                                String[] possibles = new String[10];
+                                sqlstr = "select Title from Book where Title like \"%" + Title + "%\";";
+                                rs = stmt.executeQuery(sqlstr);
+                                int i = 0;
+                                while (rs.next()) {
+                                        possibles[i] = rs.getString(1);
+                                        System.out.println("  result: " + possibles[i]);
+                                        i++;
+                                }
+                                selected = possibles[0];
+                                if (possibles.length > 1) { // multiple books exist, choose one
+                                        selected = (String)JOptionPane.showInputDialog(null,
+                                                        "Choose which book you would like: ", "Input",
+                                                        JOptionPane.INFORMATION_MESSAGE, null,
+                                                        possibles, possibles[0]);
+                                }
+
+                                System.out.println("  Book selected:  " + selected);
+
+                                // now see how many copies of that exact title are owned.
+                                sqlstr = "select Total_Copies from StoredOn natural join Book where Title = \""
+                                                + selected + "\";";
+                                System.out.println("  query: " + sqlstr);
+                                rs = stmt.executeQuery(sqlstr);
+                                if (rs.next()) {
+                                        System.out.println("  query: " + sqlstr);
+                                        numOwned = rs.getInt(1);
+                                        System.out.println("  answer: " + numOwned);
+                                }
+
+                                // now see if any copies of it are available for checkout.
+                                sqlstr = "select count(Title) from BorrowedBy natural join Book where Title = \""
+                                                + selected + "\" and Checkin_Date is NULL;";
+                                System.out.println("  query: " + sqlstr);
+                                rs = stmt.executeQuery(sqlstr);
+                                if (rs.next()) {
+                                        System.out.println("  query: " + sqlstr);
+                                        numAvail = rs.getInt(1);
+                                        System.out.println("  answer: " + numAvail);
+                                }
+                                //rs.close();
+                                if (numAvail == numOwned) { // Everything is checked out already;
+                                        System.out.println("CCC");
+                                        JOptionPane.showMessageDialog (null,
+                                                                "All " + numOwned + " copies are currently checked out.");
+                                }
+
+                                else { // there are copies available.  List them.
+                                        System.out.println("DDD");
+                                        liststr = "There are copies available.  Try the following locations:\n";
+                                        sqlstr = "select Name, Shelf_Number from StoredOn natural join Book where Title = \""
+                                                                + selected + "\";";
+                                        System.out.println("  query: " + sqlstr);
+                                        rs = stmt.executeQuery(sqlstr);
+                                        while (rs.next()) {
+                                                liststr = liststr + rs.getString(1) + " library: ";
+                                                liststr = liststr + "Shelf " + rs.getString(2);
+                                                liststr = liststr + ".\n";
+                                                System.out.println("  result: " + liststr);
+                                        }
+                                        rs.close();
+                                        JOptionPane.showMessageDialog (null,liststr);
+                                } // end looking at whether books are all checked out or any available
+                        }
+
+                }
+                catch( Exception e ) {
+                      //throw new SQLException("Database query error:\n  " + e);
+                    }//end catch
+                //}
+
+        }
+
+                                                        </code></pre>
+
+<p><a href="#top">Top</a>
+
+                                                        <h4 id="BD">Big Data Example</h4>
+<p> The following snippets run Hadoop Map Reduce code in Java on large amounts of NoSQL data to find national degree completion rates by degree type.
+<p> Main.java
+                                                        <pre><code>
+package cs435.termProject;
+
+import cs435.termProject.completionRates.CompletionDriver;
+import cs435.termProject.debtPerInstitution.DebtDriver;
+import cs435.termProject.degreeTypeRTI.RTIDriver;
+import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
+
+/**
+ * Created by Alec on 4/24/2017.
+ * main driver for map reduce algorithm
+ */
+public class Main {
+        public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+                if (args.length < 2) {
+                        System.out.println("ERROR: Wrong number of arguments\nUSAGE: <input file> <output folder>");
+                        System.exit(-1);
+                }
+
+                Path input = new Path(args[0]);
+
+                DebtDriver.run(new Path(args[0]), new Path(args[1] + "/debt"));
+                CompletionDriver.run(input, new Path(args[1] + "/comp"));
+                RTIDriver.run(input, new Path(args[1] + "/degreeRTI"));
+
+        }
 }
 
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
+                                                        </code></pre>
+<p> Mapper.java
+                                                        <pre><code>
+package cs435.termProject.degreeTypeRTI;
+
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+
+import java.io.IOException;
+
+/**
+ * gets values from data set
+ */
+public class RTIMapper extends Mapper<LongWritable, Text, Text, Text> {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+                if (key.get() != 0) { // throw out first line
+                        String[] split = value.toString().split(",");
+                        int degree = Integer.parseInt(split[14]);
+
+                        String[] path = ((FileSplit) context.getInputSplit()).getPath().getName().split("/");
+                        String year = path[path.length - 1].substring(6, 13).replace("_", "-");
+
+                        String cost = split[376]; //Average cost of attendance (academic year institutions)
+                        String earnings = split[1687]; //Median earnings of students working and not enrolled 8 years after entry
+
+                        if (cost.equals("NULL") || cost.equals("PrivacySuppressed")) {
+                                cost = split[377]; //Average cost of attendance (program-year institutions)
+                        }
+
+                        if (cost.equals("NULL") || cost.equals("PrivacySuppressed")) {
+                                cost = split[316]; //Average net price for Title IV institutions (public institutions)
+                        }
+
+                        if (cost.equals("NULL") || cost.equals("PrivacySuppressed")) {
+                                cost = split[317]; //Average net price for Title IV institutions (private for-profit and nonprofit institutions)
+                        }
+
+                        if (earnings.equals("NULL") || earnings.equals("PrivacySuppressed")){
+                                earnings = split[1630]; //Median earnings of students working and not enrolled 10 years after entry
+                        }
+
+                        if (!(cost.equals("NULL") || cost.equals("PrivacySuppressed") || (earnings.equals("NULL") || earnings.equals("PrivacySuppressed")))) { // unusable data
+                                context.write(new Text(year), new Text(degree + ":" + cost + ":" + earnings));
+                        }else {
+//                              System.out.println("No data for " + year);
+//                              System.out.println(cost +" - " + earnings);
+                        }
 
 
-                                                        <h4 id="PDE">Partial Differential Equations</h4>
-                                                        <pre><code>i = 0;
+                }
+        }
 
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
+}
+                                                        </code></pre>
+<p> Reducer.java
+                                                        <pre><code>
+package cs435.termProject.degreeTypeRTI;
+
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+import java.io.IOException;
+
+/**
+ * Created by Alec on 4/29/2017.
+ * calculates averages rti for a year
+ */
+public class RTIReducer extends Reducer<Text, Text, Text, Text> {
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+                double[] costTotal = {0, 0, 0, 0, 0};
+                int[] costCount = {0, 0, 0, 0, 0};
+                double[] earningsTotal = {0, 0, 0, 0, 0};
+                int[] earningsCount = {0, 0, 0, 0, 0};
+                double[] avgEarnings = new double[5];
+                double[] avgCost = new double[5];
+                String[] rti = new String[5]; // string so NULL can be included
+
+                for (Text value : values) {
+                        String[] split = value.toString().split(":");
+                        int degree = Integer.parseInt(split[0]);
+
+                        costTotal[degree] += Integer.parseInt(split[1]);
+                        costCount[degree]++;
+
+                        earningsTotal[degree] += Integer.parseInt(split[2]);
+                        earningsCount[degree]++;
+                }
+
+                //calculate average cost and earnings
+                for (int i = 0; i < 5; i++) {
+                        if (costCount[i] != 0) {// no data for degree type
+                                avgCost[i] = costTotal[i] / costCount[i];
+                        } else {
+                                avgCost[i] = -9999;
+                        }
+
+                        if (earningsCount[i] != 0) {
+                                avgEarnings[i] = earningsTotal[i] / earningsCount[i];
+                        } else {
+                                avgEarnings[i] = -9999;
+                        }
+                }
+
+                // calculate rti for each degree type
+
+                for (int i = 0; i < 5; i++) {
+                        if (avgCost[i] == -9999 || avgEarnings[i] == -9999) { // no data for degree type
+                                rti[i] = "NULL";
+                        } else {
+                                rti[i] = avgCost[i] / avgEarnings[i] + ""; // save as string
+                        }
+                }
+
+                StringBuilder result = new StringBuilder();
+
+                for (int i = 0; i < 5; i++) {
+                        result.append(getDegreeType(i)).append(": ").append(rti[i]).append("\n\t");
+                }
+
+                context.write(key, new Text(result.toString()));
+
+        }
+
+        private String getDegreeType(int index) {
+                String degreeName = "";
+
+                switch (index) {
+                        case 0:
+                                degreeName = "Not classified";
+                                break;
+                        case 1:
+                                degreeName = "Certificate";
+                                break;
+                        case 2:
+                                degreeName = "Associate's";
+                                break;
+                        case 3:
+                                degreeName = "Bachelor's";
+                                break;
+                        case 4:
+                                degreeName = "Graduate's";
+                                break;
+                }
+
+                return degreeName;
+        }
 }
 
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
+                                                        </code></pre>
+<p> Example Output
+                                                        <pre><code>
+2009-10 Not classified: 0.8317002881844381
+        Certificate: 0.6776450312404633
+        Associate's: 0.5209516113627338
+        Bachelor's: 0.6698616463284093
+        Graduate's: NULL
+
+2011-12 Not classified: 0.8867690830532885
+        Certificate: 0.6626436507247635
+        Associate's: 0.555058485043901
+        Bachelor's: 0.7435951752280365
+        Graduate's: 0.4722488038277512
+
+2012-13 Not classified: 0.7575956284153006
+        Certificate: 0.6754077263199156
+        Associate's: 0.5713435781756662
+        Bachelor's: 0.7648949572966951
+        Graduate's: 0.5150312891113893
+
+                                                        </code></pre>
+
+<p><a href="#top">Top</a>
 
 
-                                                        <h4 id="RA">Regression Analysis</h4>
-                                                        <pre><code>i = 0;
-
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
-
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
-
-
-                                                        <h4 id="ASA">Advanced Statistical Analysis</h4>
-                                                        <pre><code>i = 0;
-
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
-
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
-
-
-                                                        <h4 id="SS">Spatial Statistics</h4>
-                                                        <pre><code>i = 0;
-
-while (!deck.isInOrder()) {
-print 'Iteration ' + i;
-deck.shuffle();
-i++;
-}
-
-print 'It took ' + i + ' iterations to sort the deck.';
-                                                       </code></pre>
 
 
 				</div>
